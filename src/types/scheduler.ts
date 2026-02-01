@@ -3,6 +3,7 @@ import type moment from "moment";
 export interface SchedulerHeader {
   group: moment.unitOfTime.Base;
   format?: string;
+  step?: number;
 }
 
 export interface SchedulerZoomScale {

@@ -58,6 +58,7 @@
                       ? 'scheduler-timeline-header-cell-inner'
                       : '')
                   "
+                  v-intersection-observer="handleHeaderIntersection"
                 ></div>
                 <div class="scheduler-timeline-header-cell-label">
                   {{ header.label }}
@@ -72,13 +73,14 @@
           <div style="position: absolute">
             <div
               class="scheduler-body-matrix-date-cell"
-              v-for="({ date, resourceId, left, top }, dateIndex) in resourceXDates"
+              v-for="({ date, resourceId, left, top, width }, dateIndex) in resourceXDates"
               :key="dateIndex"
               :data-date="date.format('YYYY-MM-DD')"
               :data-resource-id="resourceId"
               :style="{
                 left: left + 'px',
                 top: top + 'px',
+                width: width + 'px',
               }"
             ></div>
           </div>
@@ -104,10 +106,12 @@
 </template>
 
 <script setup lang="ts">
+// #region Imports
 import moment from 'moment'
 import { computed, ref, useTemplateRef, watch } from 'vue'
 import type { SchedulerHeader, SchedulerResource, SchedulerZoomScale } from '../../types/scheduler'
-import { useIntersectionObserver } from '@vueuse/core'
+import { vIntersectionObserver } from '@vueuse/components'
+// #endregion
 
 // #region Props
 const props = defineProps<{
@@ -148,7 +152,7 @@ const totalColumns = computed(() => {
   const start = moment(startDate.value)
   const end = moment(endDate.value)
   const diff = end.diff(start, scale.value.scale) + 1
-  return diff
+  return diff / scale.value.step
 })
 
 const totalRows = computed(() => {
@@ -160,10 +164,12 @@ const totalRows = computed(() => {
 const headers = computed<Array<SchedulerHeader>>(
   () =>
     props.headers || [
-      { group: 'month', format: 'MMMM' },
+      { group: 'month', format: 'MMMM YYYY' },
+      { group: 'week', format: '[W-]WW' },
       {
         group: 'day',
         format: 'DD',
+        step: 1,
       },
     ],
 )
@@ -195,7 +201,10 @@ const headerGroups = computed(() => {
 
     while (current.isSameOrBefore(end, header.group)) {
       const groupStart = current.clone().startOf(header.group)
-      const groupEnd = current.clone().endOf(header.group)
+      const groupEnd = current
+        .clone()
+        .add((header.step || 1) - 1, header.group)
+        .endOf(header.group)
 
       // Clamp the group start and end to the visible scheduler range
       const visibleStart = moment.max(groupStart, moment(startDate.value))
@@ -203,12 +212,14 @@ const headerGroups = computed(() => {
 
       // Calculate the width based on the visible portion only
       const columnCount = visibleEnd.diff(visibleStart, scale.value.scale, true)
-      const width = columnCount * headerHeight.value
+      const width = (columnCount / (scale.value.step || 1)) * headerHeight.value
 
       // Calculate the left position from the start date (always >= 0)
       const left = Math.max(
         0,
-        groupStart.diff(moment(startDate.value), scale.value.scale, true) * headerHeight.value,
+        (groupStart.diff(moment(startDate.value), scale.value.scale, true) /
+          (scale.value.step || 1)) *
+          headerHeight.value,
       )
 
       headerGroup.push({
@@ -219,7 +230,7 @@ const headerGroups = computed(() => {
         left,
       })
 
-      current.add(1, header.group)
+      current.add(header.step || 1, header.group)
     }
 
     groups.push(headerGroup)
@@ -255,43 +266,94 @@ const horizontalLines = computed(() => {
 
 const verticalLines = computed(() => {
   const lines: Array<number> = []
-  const start = moment(startDate.value).add(1, scale.value.scale)
-  const end = moment(endDate.value).add(1, scale.value.scale)
+  const start = moment(startDate.value).startOf(scale.value.scale)
+  const end = moment(endDate.value).endOf(scale.value.scale)
   let current = start.clone()
 
   while (current.isSameOrBefore(end, scale.value.scale)) {
-    lines.push(current.diff(moment(startDate.value), scale.value.scale, true) * headerHeight.value)
-    current.add(1, scale.value.scale)
+    const groupStart = current.clone().startOf(scale.value.scale)
+    const groupEnd = current
+      .clone()
+      .add(scale.value.step - 1, scale.value.scale)
+      .endOf(scale.value.scale)
+
+    const visibleStart = moment.max(groupStart, moment(startDate.value))
+    const visibleEnd = moment.min(groupEnd, moment(endDate.value))
+
+    // Calculate the width based on the visible portion only
+    const columnCount = visibleEnd.diff(visibleStart, scale.value.scale, true)
+    const width = (columnCount / (scale.value.step || 1)) * headerHeight.value
+
+    // Calculate the left position from the start date (always >= 0)
+    const left = Math.max(
+      0,
+      (groupStart.diff(moment(startDate.value), scale.value.scale, true) /
+        (scale.value.step || 1)) *
+        headerHeight.value,
+    )
+
+    lines.push(left)
+    lines.push(left + width)
+
+    current.add(scale.value.step, scale.value.scale)
   }
-  return lines
+  return [...new Set(lines)]
 })
 // #endregion
 
+// #region Resource Dates
 const resourceXDates = computed(() => {
   const dates: Array<{
     date: moment.Moment
     resourceId: string
     left: number
     top: number
+    width: number
   }> = []
+
   const start = moment(startDate.value).startOf(scale.value.scale)
   const end = moment(endDate.value).endOf(scale.value.scale)
   let current = start.clone()
+
   while (current.isSameOrBefore(end, scale.value.scale)) {
-    resources.value.forEach((resource) => {
+    const groupStart = current.clone().startOf(scale.value.scale)
+    const groupEnd = current
+      .clone()
+      .add(scale.value.step - 1, scale.value.scale)
+      .endOf(scale.value.scale)
+
+    const visibleStart = moment.max(groupStart, moment(startDate.value))
+    const visibleEnd = moment.min(groupEnd, moment(endDate.value))
+
+    // Calculate the width based on the visible portion only
+    const columnCount = visibleEnd.diff(visibleStart, scale.value.scale, true)
+    const width = (columnCount / (scale.value.step || 1)) * headerHeight.value
+
+    // Calculate the left position from the start date (always >= 0)
+    const left = Math.max(
+      0,
+      (groupStart.diff(moment(startDate.value), scale.value.scale, true) /
+        (scale.value.step || 1)) *
+        headerHeight.value,
+    )
+
+    resources.value.forEach((resource, index) => {
       dates.push({
         date: current.clone(),
         resourceId: resource.id,
-        left: current.diff(moment(startDate.value), scale.value.scale, true) * headerHeight.value,
-        top: resources.value.indexOf(resource) * resourceHeight.value,
+        left,
+        top: index * resourceHeight.value,
+        width,
       })
     })
-    current.add(1, scale.value.scale)
+    current.add(scale.value.step, scale.value.scale)
   }
   return dates
 })
 // #endregion
+// #endregion
 
+// #region Scroll
 const scrollY = ref(0)
 const scrollX = ref(0)
 
@@ -307,11 +369,20 @@ watch(
   },
 )
 
-// #region Scroll
 function handleBodyScroll(event: Event) {
   const target = event.target as HTMLElement
   scrollY.value = target.scrollTop
   scrollX.value = target.scrollLeft
+}
+
+function handleHeaderIntersection(entries: IntersectionObserverEntry[]) {
+  entries.forEach((entry) => {
+    if (entry.isIntersecting) {
+      const target = entry.target as HTMLElement
+      target.style.insetInlineStart = `${entry.intersectionRect.width}px`
+      // target.style.insetInlineEnd = `${entry.intersectionRect.right}px`
+    }
+  })
 }
 // #endregion
 </script>

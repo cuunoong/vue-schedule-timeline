@@ -1,0 +1,67 @@
+{
+  "name": "vue-timeline-scheduler",
+  "version": "0.1.0",
+  "description": "A flexible and customizable timeline scheduler component for Vue 3",
+  "type": "module",
+  "main": "./dist/vue-timeline-scheduler.umd.js",
+  "module": "./dist/vue-timeline-scheduler.es.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/vue-timeline-scheduler.es.js",
+      "require": "./dist/vue-timeline-scheduler.umd.js"
+    },
+    "./style.css": "./dist/style.css"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "vite",
+    "build": "run-p type-check \"build-only {@}\" --",
+    "preview": "vite preview",
+    "build-only": "vite build",
+    "type-check": "vue-tsc --build",
+    "format": "oxfmt src/"
+  },
+  "peerDependencies": {
+    "vue": "^3.5.0"
+  },
+  "dependencies": {
+    "@vueuse/core": "^14.2.0",
+    "moment": "^2.30.1"
+  },
+  "devDependencies": {
+    "@tsconfig/node24": "^24.0.4",
+    "@types/node": "^24.10.9",
+    "@vitejs/plugin-vue": "^6.0.3",
+    "@vue/tsconfig": "^0.8.1",
+    "npm-run-all2": "^8.0.4",
+    "oxfmt": "^0.27.0",
+    "sass-embedded": "^1.97.3",
+    "typescript": "~5.9.3",
+    "vite": "^7.3.1",
+    "vite-plugin-vue-devtools": "^8.0.5",
+    "vue": "^3.5.27",
+    "vue-tsc": "^3.2.4"
+  },
+  "engines": {
+    "node": "^20.19.0 || >=22.12.0"
+  },
+  "keywords": [
+    "vue",
+    "vue3",
+    "timeline",
+    "scheduler",
+    "gantt",
+    "calendar",
+    "component"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cuunoong/vue-timeline-scheduler"
+  }
+}

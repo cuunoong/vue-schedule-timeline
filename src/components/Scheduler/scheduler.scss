@@ -1,0 +1,256 @@
+.scheduler {
+  --scheduler-scroll-padding: 15px;
+
+  --scheduler-header-block-height: calc(
+    var(--scheduler-prop-header-height) * var(--scheduler-prop-header-rows)
+  );
+  --scheduler-timeline-viewport-width: calc(
+    min(
+        calc(var(--scheduler-prop-width) - var(--scheduler-prop-resource-width)),
+        calc(var(--scheduler-prop-header-height) * var(--scheduler-prop-total-columns))
+      ) -
+      1px
+  );
+  --scheduler-timeline-content-width: calc(
+    var(--scheduler-prop-header-height) * var(--scheduler-prop-total-columns)
+  );
+  --scheduler-timeline-content-height: calc(
+    var(--scheduler-prop-resource-height) * var(--scheduler-prop-total-rows)
+  );
+
+  --scheduler-resource-block-height: calc(
+    var(--scheduler-timeline-content-height) + var(--scheduler-scroll-padding)
+  );
+
+  --scheduler-container-width: min(
+    var(--scheduler-prop-width),
+    calc(var(--scheduler-prop-resource-width) * var(--scheduler-prop-total-columns))
+  );
+  --scheduler-container-height: min(
+    var(--scheduler-prop-height),
+    calc(var(--scheduler-resource-block-height) + var(--scheduler-header-block-height))
+  );
+
+  user-select: none;
+  position: relative;
+  line-height: 1.2;
+  width: var(--scheduler-container-width);
+  height: var(--scheduler-container-height);
+  border: 1px solid var(--scheduler-divider-color, #e0e0e0);
+
+  font-family: var(
+    --scheduler-font-family,
+    -apple-system,
+    system-ui,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    'Helvetica Neue',
+    Arial,
+    sans-serif
+  );
+
+  font-size: var(--scheduler-font-size, 13px);
+
+  & * {
+    box-sizing: content-box;
+  }
+
+  &-resource {
+    position: absolute;
+    left: 0;
+    width: calc(var(--scheduler-prop-resource-width) + 1px);
+
+    &-corner {
+      position: absolute;
+      overflow: hidden;
+      width: var(--scheduler-prop-resource-width);
+      height: var(--scheduler-header-block-height);
+
+      @extend .header;
+    }
+
+    &-divider {
+      position: absolute;
+      height: 0px;
+      top: var(--scheduler-header-block-height);
+      width: 100%;
+      border-top: 1px solid transparent;
+      background-color: var(--scheduler-divider-color, #e0e0e0);
+    }
+
+    &-scroll {
+      top: calc(var(--scheduler-header-block-height) + 1px);
+      width: calc(var(--scheduler-prop-resource-width) + 1px);
+      height: calc(var(--scheduler-resource-block-height) - 1px);
+      overflow: hidden;
+      position: relative;
+    }
+
+    &-container {
+      width: calc(var(--scheduler-prop-resource-width) + 1px);
+      height: var(--scheduler-resource-block-height);
+    }
+
+    &-row {
+      position: absolute;
+      width: calc(var(--scheduler-prop-resource-width) + 1px);
+      border: 0px none;
+
+      &-empty {
+        width: var(--scheduler-prop-resource-width);
+        height: calc(var(--scheduler-prop-resource-height) * 2.5);
+        position: absolute;
+        top: calc(var(--scheduler-prop-resource-height) * var(--scheduler-prop-total-rows));
+
+        @extend .header;
+      }
+
+      &-label {
+        overflow: hidden;
+        width: calc(var(--scheduler-prop-resource-width) + 1px);
+        height: var(--scheduler-prop-resource-height);
+        position: relative;
+        display: flex;
+        align-items: var(--scheduler-header-align, center);
+        justify-content: var(--scheduler-header-justify, center);
+
+        @extend .header;
+      }
+
+      &-divider {
+        position: absolute;
+        bottom: 0;
+        width: 100%;
+        height: 0px;
+        border-top: 1px solid transparent;
+        background-color: var(--scheduler-divider-color, #e0e0e0);
+        box-sizing: content-box;
+      }
+    }
+  }
+
+  &-divider {
+    position: absolute;
+    left: var(--scheduler-prop-resource-width);
+    width: 1px;
+    height: var(--scheduler-container-height);
+    background-color: var(--scheduler-divider-color, #e0e0e0);
+  }
+
+  &-timeline {
+    position: relative;
+    left: calc(var(--scheduler-prop-resource-width) + 1px);
+
+    &-header {
+      position: absolute;
+      height: var(--scheduler-prop-header-height);
+      user-select: none;
+      overflow: hidden;
+      white-space: nowrap;
+
+      @extend .header;
+
+      &-scroll {
+        overflow: hidden;
+        display: block;
+        position: absolute;
+        top: 0;
+        width: var(--scheduler-timeline-viewport-width);
+        height: var(--scheduler-header-block-height);
+      }
+
+      &-container {
+        width: var(--scheduler-timeline-content-width);
+        height: var(--scheduler-header-block-height);
+      }
+
+      &-group {
+        position: relative;
+      }
+
+      &-cell {
+        display: flex;
+        align-items: var(--scheduler-header-align, center);
+        justify-content: var(--scheduler-header-justify, center);
+        padding: var(--scheduler-header-padding, 0);
+        inset: 0;
+        position: absolute;
+        border-right: 1px solid var(--scheduler-divider-color, #e0e0e0);
+
+        &-inner {
+          inset: 0;
+          border-bottom: 1px solid var(--scheduler-divider-color, #e0e0e0);
+        }
+
+        &-label {
+          position: absolute;
+          overflow: hidden;
+          inset: 0;
+
+          @extend .scheduler-timeline-header-cell;
+        }
+      }
+    }
+
+    &-divider {
+      position: absolute;
+      top: var(--scheduler-header-block-height);
+      width: var(--scheduler-timeline-viewport-width);
+      height: 1px;
+      box-sizing: border-box;
+      border-bottom: 1px solid transparent;
+      background-color: var(--scheduler-divider-color, #e0e0e0);
+    }
+  }
+
+  &-body {
+    overflow: auto;
+    height: calc(var(--scheduler-resource-block-height) + 1px);
+    top: var(--scheduler-header-block-height);
+    width: calc(var(--scheduler-timeline-viewport-width));
+    position: absolute;
+
+    &-matrix {
+      user-select: none;
+      min-height: 1px;
+      position: absolute;
+      height: calc(var(--scheduler-resource-block-height) - var(--scheduler-scroll-padding) + 1px);
+      width: var(--scheduler-timeline-content-width);
+
+      &-date {
+        &-cell {
+          background-color: var(--scheduler-resource-block-color, #fff);
+          position: absolute;
+          width: var(--scheduler-prop-header-height);
+          height: var(--scheduler-prop-resource-height);
+        }
+      }
+
+      &-divider {
+        &-horizontal {
+          position: absolute;
+          left: 0;
+          right: 0;
+          border-top: 1px solid var(--scheduler-divider-color, #e0e0e0);
+          pointer-events: none;
+          width: var(--scheduler-timeline-content-width);
+        }
+
+        &-vertical {
+          position: absolute;
+          top: 0;
+          bottom: 0;
+          border-left: 1px solid var(--scheduler-divider-color, #e0e0e0);
+          pointer-events: none;
+          height: var(--scheduler-timeline-content-height);
+        }
+      }
+    }
+  }
+}
+
+.header {
+  color: var(--scheduler-header-text-color, #333);
+  background-color: var(--scheduler-header-bg-color, #f3f3f3);
+}
